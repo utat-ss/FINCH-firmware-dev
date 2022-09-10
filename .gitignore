@@ -53,6 +53,7 @@ dkms.conf
 
 # STM32CubeIDE project/configuration files
 .settings
+.cproject
 .mxproject
 mx.scratch
 *.launch
