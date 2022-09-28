@@ -46,8 +46,9 @@
   extern uint32_t SystemCoreClock;
 #endif
 
+#define configALLOW_UNPRIVILEGED_CRITICAL_SECTIONS    0
 #define configUSE_PREEMPTION					1
-#define configSUPPORT_STATIC_ALLOCATION			1
+#define configSUPPORT_STATIC_ALLOCATION			0
 #define configSUPPORT_DYNAMIC_ALLOCATION		1
 #define configUSE_IDLE_HOOK						0
 #define configUSE_TICK_HOOK						0
@@ -124,12 +125,12 @@ See http://www.FreeRTOS.org/RTOS-Cortex-M3-M4.html. */
 
 /* Definitions that map the FreeRTOS port interrupt handlers to their CMSIS
  * standard names. */
-//#define vPortSVCHandler								SVC_Handler
-//#define xPortPendSVHandler							PendSV_Handler
-//#define xPortSysTickHandler							SysTick_Handler
+#define vPortSVCHandler								SVC_Handler
+#define xPortPendSVHandler							PendSV_Handler
+#define xPortSysTickHandler							SysTick_Handler
 
 /* Allow system call from within FreeRTOS kernel only. */
-#define configENFORCE_SYSTEM_CALLS_FROM_KERNEL_ONLY	1
+#define configENFORCE_SYSTEM_CALLS_FROM_KERNEL_ONLY	0
 
 /* STM32H743 and STM32G431 have 16 MPU regions and therefore it is necessary to configure
  * configTOTAL_MPU_REGIONS correctly. */
