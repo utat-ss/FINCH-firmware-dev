@@ -340,7 +340,7 @@ static void prvSetupHardware( void )
 {
     /* Ensure all priority bits are assigned as preemption priority bits
     if using a ARM Cortex-M microcontroller. */
-    NVIC_SetPriorityGrouping( 0 );
+//    NVIC_SetPriorityGrouping( 4 );
 
     /* TODO: Setup the clocks, etc. here, if they were not configured before
     main() was called. */
