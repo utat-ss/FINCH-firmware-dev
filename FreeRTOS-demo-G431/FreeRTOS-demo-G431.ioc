@@ -2,7 +2,7 @@
 FREERTOS.FootprintOK=true
 FREERTOS.IPParameters=Tasks01,FootprintOK,configUSE_NEWLIB_REENTRANT
 FREERTOS.Tasks01=blink,24,128,StartBlink,Default,NULL,Dynamic,NULL,NULL;printHello,8,128,StartPrintHello,Default,NULL,Dynamic,NULL,NULL
-FREERTOS.configUSE_NEWLIB_REENTRANT=1
+FREERTOS.configUSE_NEWLIB_REENTRANT=0
 File.Version=6
 KeepUserPlacement=false
 LPUART1.BaudRate=115200
