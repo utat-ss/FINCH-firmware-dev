@@ -39,7 +39,7 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
- UART_HandleTypeDef hlpuart1;
+UART_HandleTypeDef hlpuart1;
 
 /* USER CODE BEGIN PV */
 
