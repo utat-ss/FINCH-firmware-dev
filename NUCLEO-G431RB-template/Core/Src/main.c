@@ -21,7 +21,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include <string.h>
+#include <stdio.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -39,9 +40,21 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+I2C_HandleTypeDef hi2c1;
+
 UART_HandleTypeDef hlpuart1;
+UART_HandleTypeDef huart1;
+UART_HandleTypeDef huart3;
 
 /* USER CODE BEGIN PV */
+//MCP9808 address is: 0011000 (THIS WAS SET MANUALLY AND MAY NOT WORK BY DEFAULT ON YOUR DEVICE)
+//See datasheet for instructions on setting your devices address correctly
+static const uint8_t MCP9808_ADDR = 0b0011000 << 1;//rightmost bit is used for ack so leave it free
+
+//Not subject to change, see datasheet
+static const uint8_t TEMP_REGISTER_PTR = 0x5;
+
+
 
 /* USER CODE END PV */
 
@@ -49,6 +62,9 @@ UART_HandleTypeDef hlpuart1;
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_LPUART1_UART_Init(void);
+static void MX_I2C1_Init(void);
+static void MX_USART3_UART_Init(void);
+static void MX_USART1_UART_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -65,6 +81,18 @@ static void MX_LPUART1_UART_Init(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
+
+	//return status for error checking
+	HAL_StatusTypeDef ret;
+
+	//reusable buffer for any purposes
+	uint8_t buf[12];
+
+	//used to store raw temp data from sensor
+	uint16_t temp_val;
+
+	//used to store processed true temp value in c
+	float temp_c;
 
   /* USER CODE END 1 */
 
@@ -87,6 +115,9 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_LPUART1_UART_Init();
+  MX_I2C1_Init();
+  MX_USART3_UART_Init();
+  MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
 
   /* USER CODE END 2 */
@@ -95,6 +126,63 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  buf[0] = TEMP_REGISTER_PTR;
+
+
+	  //set the sensor "register pointer" to the temperture value register
+	  //so its ready for reading
+	  ret = HAL_I2C_Master_Transmit(&hi2c1, MCP9808_ADDR, buf, 1, HAL_MAX_DELAY);
+
+	  //check that there were no errors in transmission
+	  if (ret != HAL_OK) strcpy((char*)buf, "TX Error\r\n");
+	  else
+	  {
+		  //Assuming TX is all good, now we can go ahead and read the temp register value
+		  ret = HAL_I2C_Master_Receive(&hi2c1, MCP9808_ADDR, buf, 2, HAL_MAX_DELAY);
+
+		  if (ret != HAL_OK) strcpy((char*)buf, "RX Error\r\n");
+		  else
+		  {
+			  //combine both read bytes
+			  temp_val = (uint16_t)(buf[0] << 8) | buf[1];
+
+			  /*mask everything below sign bit
+			  yes I realize that I didn't do the math in the case that
+			  temperture is negative but I really can't be bothered especially
+			  given that the point of this project is to test i2c
+			  communication, and not actually make a temperture sensor driver
+			  */
+			  temp_val &= 0b0000111111111111;
+
+
+			  /*
+			  Data in temp_val is an integer in units of 1/16th C (see datasheet),
+			  therefore if the temp is 1.5c, temp_val is 24 (24 * 1/16 = 1.5),
+			  therefore we need to multiply by 1/16th = 0.0625 to get a floating
+			  point C value from our measurement
+			  */
+
+			  temp_c = 0.0625 * temp_val;
+
+
+			  //put 2 decimal digits of precision as a string into buffer
+			  temp_c *= 100;
+			  sprintf((char*)buf,
+				 "%u.%u C\r\n",
+				 ((unsigned int)temp_c / 100),
+				 ((unsigned int)temp_c % 100));
+
+		  }
+
+	  }
+
+
+
+
+	  //transmit buffer back over serial UART, use PuTTY to read output
+	  HAL_UART_Transmit(&hlpuart1, buf, strlen((char*)buf), HAL_MAX_DELAY);
+	  HAL_Delay(500);
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -149,6 +237,54 @@ void SystemClock_Config(void)
 }
 
 /**
+  * @brief I2C1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_I2C1_Init(void)
+{
+
+  /* USER CODE BEGIN I2C1_Init 0 */
+
+  /* USER CODE END I2C1_Init 0 */
+
+  /* USER CODE BEGIN I2C1_Init 1 */
+
+  /* USER CODE END I2C1_Init 1 */
+  hi2c1.Instance = I2C1;
+  hi2c1.Init.Timing = 0x10802D9B;
+  hi2c1.Init.OwnAddress1 = 0;
+  hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+  hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+  hi2c1.Init.OwnAddress2 = 0;
+  hi2c1.Init.OwnAddress2Masks = I2C_OA2_NOMASK;
+  hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+  hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+  if (HAL_I2C_Init(&hi2c1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure Analogue filter
+  */
+  if (HAL_I2CEx_ConfigAnalogFilter(&hi2c1, I2C_ANALOGFILTER_ENABLE) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure Digital filter
+  */
+  if (HAL_I2CEx_ConfigDigitalFilter(&hi2c1, 0) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN I2C1_Init 2 */
+
+  /* USER CODE END I2C1_Init 2 */
+
+}
+
+/**
   * @brief LPUART1 Initialization Function
   * @param None
   * @retval None
@@ -192,6 +328,102 @@ static void MX_LPUART1_UART_Init(void)
   /* USER CODE BEGIN LPUART1_Init 2 */
 
   /* USER CODE END LPUART1_Init 2 */
+
+}
+
+/**
+  * @brief USART1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART1_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART1_Init 0 */
+
+  /* USER CODE END USART1_Init 0 */
+
+  /* USER CODE BEGIN USART1_Init 1 */
+
+  /* USER CODE END USART1_Init 1 */
+  huart1.Instance = USART1;
+  huart1.Init.BaudRate = 115200;
+  huart1.Init.WordLength = UART_WORDLENGTH_8B;
+  huart1.Init.StopBits = UART_STOPBITS_1;
+  huart1.Init.Parity = UART_PARITY_NONE;
+  huart1.Init.Mode = UART_MODE_TX_RX;
+  huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart1.Init.OverSampling = UART_OVERSAMPLING_16;
+  huart1.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+  huart1.Init.ClockPrescaler = UART_PRESCALER_DIV1;
+  huart1.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+  if (HAL_UART_Init(&huart1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_UARTEx_SetTxFifoThreshold(&huart1, UART_TXFIFO_THRESHOLD_1_8) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_UARTEx_SetRxFifoThreshold(&huart1, UART_RXFIFO_THRESHOLD_1_8) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_UARTEx_DisableFifoMode(&huart1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART1_Init 2 */
+
+  /* USER CODE END USART1_Init 2 */
+
+}
+
+/**
+  * @brief USART3 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART3_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART3_Init 0 */
+
+  /* USER CODE END USART3_Init 0 */
+
+  /* USER CODE BEGIN USART3_Init 1 */
+
+  /* USER CODE END USART3_Init 1 */
+  huart3.Instance = USART3;
+  huart3.Init.BaudRate = 115200;
+  huart3.Init.WordLength = UART_WORDLENGTH_8B;
+  huart3.Init.StopBits = UART_STOPBITS_1;
+  huart3.Init.Parity = UART_PARITY_NONE;
+  huart3.Init.Mode = UART_MODE_TX_RX;
+  huart3.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart3.Init.OverSampling = UART_OVERSAMPLING_16;
+  huart3.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+  huart3.Init.ClockPrescaler = UART_PRESCALER_DIV1;
+  huart3.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+  if (HAL_UART_Init(&huart3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_UARTEx_SetTxFifoThreshold(&huart3, UART_TXFIFO_THRESHOLD_1_8) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_UARTEx_SetRxFifoThreshold(&huart3, UART_RXFIFO_THRESHOLD_1_8) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_UARTEx_DisableFifoMode(&huart3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART3_Init 2 */
+
+  /* USER CODE END USART3_Init 2 */
 
 }
 
