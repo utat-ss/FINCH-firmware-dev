@@ -1,3 +1,4 @@
+#include "BQ76952-basic.h"
 /*
  * BQ76952-basic.c
  *
