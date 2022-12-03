@@ -34,8 +34,6 @@ typedef enum
 } Status_TypeDef;
 
 
-
-
-void requestStatus(uint16_t buff [], uint16_t position);
+void requestStatus(uint8_t buff [], uint16_t position);
 
 #endif /* INC_BQ76952_STATUS_CHECK_H_ */

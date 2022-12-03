@@ -7,7 +7,7 @@
  * Pass in the position integer, see ENUM in Header File
  * Returns the current status in the provided buffer
  */
-void requestStatus(uint16_t buff [], uint16_t position){
+void requestStatus(uint8_t buff [], uint16_t position){
 	HAL_StatusTypeDef ret;
 	buff [0] = STATUS_ADDRESS;
 	ret = HAL_I2C_Master_Transmit(PTR_BQ76952_I2C_HANDLE, BQ76952_I2C_ADDRESS, buff, 1, 1000);
@@ -16,12 +16,12 @@ void requestStatus(uint16_t buff [], uint16_t position){
 		strcpy((char*)buff, "BQ76952 I2C TX Error\r\n");
 		return;
 	}
-	ret = HAL_I2C_Master_Receive(PTR_BQ76952, BQ76952_I2C_ADDRESS, buff, 1, 1000);
+	ret = HAL_I2C_Master_Receive(PTR_BQ76952, BQ76952_I2C_ADDRESS, buff, 2, 1000);
 	if(ret != HAL_OK){
 		strcpy((char*)buff, "BQ76952 I2C RX Error\r\n");
 		return;
 	}
-	uint16_t status = buff [0];
+	uint16_t status = (uint16_t)buff [0] << 8 | buff[1];
 	switch(position){
 		case CFGUPDATE:
 			if(position & status){
