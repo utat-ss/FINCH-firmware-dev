@@ -11,7 +11,7 @@
  */
 
 #define BQ76952
-
+#include <stdint.h>
 
 
 static const uint8_t BQ76952_I2C_ADDRESS = 0b0011000 << 1;
