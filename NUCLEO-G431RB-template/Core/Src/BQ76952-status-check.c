@@ -7,7 +7,7 @@
  * Pass in the position integer, see ENUM in Header File
  * Returns the current status in the provided buffer
  */
-void requestStatus(uint8_t buff [], uint16_t position){
+void requestStatus(uint8_t buff [], Status_TypeDef position){
 	BQ76952_I2C_Read(PTR_BQ76952_I2C_HANDLE, BQ76952_I2C_ADDRESS, buff, 2);
 	uint16_t status = (uint16_t)buff [0] << 8 | buff[1];
 	switch(position){
@@ -76,7 +76,8 @@ void requestStatus(uint8_t buff [], uint16_t position){
 			}
 			break;
 		case SEC:
-			uint16_t val = ((position | (position<<1)) & status)>>8;
+		{
+			uint16_t val = ((position & status) >> 8);
 			if(val == 0){
 				strcpy((char*)buff, "Device Not Initialized\r\n");
 			}
@@ -90,6 +91,7 @@ void requestStatus(uint8_t buff [], uint16_t position){
 				strcpy((char*)buff, "Device is in SEALED Mode\r\n");
 			}
 			break;
+		}
 		case FUSE:
 			if(position & status){
 				strcpy((char*)buff, "Fuse Asserted\r\n");
