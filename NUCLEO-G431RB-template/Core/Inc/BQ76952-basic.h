@@ -25,7 +25,7 @@ I2C_HandleTypeDef *PTR_BQ76952_I2C_HANDLE = &hi2c1;//placeholder
 
 void TestConnection(char *status);
 
-
+uint8_t BQ76952_I2C_Read(I2C_HandleTypeDef *DEVICE_ADRRESS, uint16_t I2C_ADDRESS, uint8_t buff, uint16_t numBytes);
 
 #ifndef BQ76952_BASIC_H_
 #define BQ76952_BASIC_H_

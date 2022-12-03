@@ -4,6 +4,7 @@
  *
  *  Created on: Nov. 12, 2022
  *      Author: Aspen Erlandsson, IG: @xzips
+ *      		Richard Li
  *
  * TI-BQ76952 Basic driver to cover the core functionalities necessary for future development,
  * namely: Initiate a connection with the device, receive basic information such as device ID,
@@ -45,5 +46,21 @@ void TestConnection(char* status)
 	strcpy((char*)buf, "BQ76952 I2C Comms OK\r\n\0");
 }
 
+uint8_t BQ76952_I2C_Read(I2C_HandleTypeDef *DEVICE_ADRRESS, uint16_t I2C_ADDRESS, uint8_t buff, uint16_t numBytes){
+	HAL_StatusTypeDef ret;
+	buff [0] = I2C_ADDRESS;
+	ret = HAL_I2C_Master_Transmit(DEVICE_ADDRESS, I2C_ADDRESS, buff, 1, 1000);
+
+	if(ret != HAL_OK){
+		strcpy((char*)buff, "BQ76952 I2C TX Error\r\n");
+		return 0;
+	}
+	ret = HAL_I2C_Master_Receive(DEVICE_ADDRESS, I2C_ADDRESS, buff, numbytes, 1000);
+	if(ret != HAL_OK){
+		strcpy((char*)buff, "BQ76952 I2C RX Error\r\n");
+		return 0;
+	}
+	return 1;
+}
 
 
