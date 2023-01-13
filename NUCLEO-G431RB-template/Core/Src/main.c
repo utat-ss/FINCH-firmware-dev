@@ -21,7 +21,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include <stdio.h>
+#include <string.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -92,13 +93,26 @@ int main(void)
   MX_LPUART1_UART_Init();
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
-
+  char uart_buf[100];
+  uint16_t uart_buf_len = 0;
+  char spi_buf[100];
+  uint16_t spi_buf_len = 80;
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  uart_buf_len = sprintf(uart_buf, "Waiting for NMEA message\r\n");
+	  HAL_UART_Transmit(&hlpuart1, (uint8_t* )uart_buf, uart_buf_len, HAL_MAX_DELAY);
+
+	  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_RESET);
+	  HAL_SPI_Receive(&hspi1, (uint8_t* )spi_buf, spi_buf_len, HAL_MAX_DELAY);
+	  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_SET);
+
+	  HAL_UART_Transmit(&hlpuart1, (uint8_t* )spi_buf, spi_buf_len, HAL_MAX_DELAY);
+
+	  HAL_Delay(100);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
